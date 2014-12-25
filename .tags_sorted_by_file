@@ -1,0 +1,18 @@
+abspath_gen	file_manage.c	/^void abspath_gen(char* path, char* filename, char* abs_path) $/;"	f
+gen_conf	file_manage.c	/^int gen_conf(char* conf_file, char* lig_name, char* rcp_name, char* output, int* ctr, int* sz, int thread_num, int index)$/;"	f
+write_conf	file_manage.c	/^void write_conf(char* path, char* lig_name, char* rcp_name, int thread_num, int index, int is_mic) $/;"	f
+FILE_MANAGE_H	file_manage.h	2;"	d
+MAX_INDEX	file_manage.h	4;"	d
+main	main.c	/^int main(int argc, char const *argv[])$/;"	f
+print	main.c	8;"	d	file:
+get_wkload	task_alloc.c	/^int *get_wkload(type t, int rank, char* path, int thread_num) $/;"	f
+CPU	task_alloc.h	6;"	d
+MAX_JOBS	task_alloc.h	9;"	d
+MIC	task_alloc.h	7;"	d
+TASK_ALLOC_H	task_alloc.h	2;"	d
+!_TAG_FILE_SORTED	1	/0=unsorted, 1=sorted, 2=foldcase/
+!_TAG_FILE_FORMAT	2	/extended format; --format=1 will not append ;" to lines/
+!_TAG_PROGRAM_VERSION	5.8	//
+!_TAG_PROGRAM_AUTHOR	Darren Hiebert	/dhiebert@users.sourceforge.net/
+!_TAG_PROGRAM_NAME	Exuberant Ctags	//
+!_TAG_PROGRAM_URL	http://ctags.sourceforge.net	/official site/
