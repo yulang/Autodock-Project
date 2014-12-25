@@ -1,15 +1,34 @@
-abspath_gen	file_manage.c	/^void abspath_gen(char* path, char* filename, char* abs_path) $/;"	f
-gen_conf	file_manage.c	/^int gen_conf(char* conf_file, char* lig_name, char* rcp_name, char* output, int* ctr, int* sz, int thread_num, int index)$/;"	f
-write_conf	file_manage.c	/^void write_conf(char* path, char* lig_name, char* rcp_name, int thread_num, int index, int is_mic) $/;"	f
+file_trans	file_manage.c	/^int file_trans(const char* file_path, const char* dst_loc, type t)$/;"	f
+gen_conf	file_manage.c	/^int gen_conf(char* conf_file, struct conf cf, int index)$/;"	f
+setup	file_manage.c	/^int setup(const char* lig_lib, const char* rcp_loc, const char* work_path, int index, type t) $/;"	f
+write_conf	file_manage.c	/^int write_conf(char* path, struct conf cf, int index) $/;"	f
+CPU	file_manage.h	11;"	d
 FILE_MANAGE_H	file_manage.h	2;"	d
+MAX_CMD_LEN	file_manage.h	8;"	d
+MAX_CONF_SIZE	file_manage.h	7;"	d
+MAX_FILENAME	file_manage.h	5;"	d
 MAX_INDEX	file_manage.h	4;"	d
+MAX_PATH	file_manage.h	6;"	d
+MIC	file_manage.h	12;"	d
+cent	file_manage.h	/^	int cent[3];$/;"	m	struct:conf
+conf	file_manage.h	/^struct conf {$/;"	s
+exht	file_manage.h	/^	int exht;$/;"	m	struct:conf
+lig	file_manage.h	/^	char lig[MAX_FILENAME];$/;"	m	struct:conf
+outfile	file_manage.h	/^	char outfile[MAX_FILENAME];$/;"	m	struct:conf
+rcp	file_manage.h	/^	char rcp[MAX_FILENAME];$/;"	m	struct:conf
+size	file_manage.h	/^	int size[3];$/;"	m	struct:conf
+LOG_H	log.h	2;"	d
+print	log.h	4;"	d
 main	main.c	/^int main(int argc, char const *argv[])$/;"	f
-print	main.c	8;"	d	file:
 get_wkload	task_alloc.c	/^int *get_wkload(type t, int rank, char* path, int thread_num) $/;"	f
-CPU	task_alloc.h	6;"	d
-MAX_JOBS	task_alloc.h	9;"	d
-MIC	task_alloc.h	7;"	d
+CPU	task_alloc.h	7;"	d
+MAX_JOBS	task_alloc.h	10;"	d
+MIC	task_alloc.h	8;"	d
 TASK_ALLOC_H	task_alloc.h	2;"	d
+job_num	task_alloc.h	/^	int job_num;$/;"	m	struct:job_pool
+job_pool	task_alloc.h	/^struct job_pool$/;"	s
+lig_arr	task_alloc.h	/^	int lig_arr[MAX_JOBS];$/;"	m	struct:job_pool
+wk_ptr	task_alloc.h	/^	int wk_ptr;$/;"	m	struct:job_pool
 !_TAG_FILE_SORTED	1	/0=unsorted, 1=sorted, 2=foldcase/
 !_TAG_FILE_FORMAT	2	/extended format; --format=1 will not append ;" to lines/
 !_TAG_PROGRAM_VERSION	5.8	//

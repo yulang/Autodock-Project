@@ -2,9 +2,20 @@
 #include <sys/stat.h>
 #include <string.h>
 
+char* gen_filename(int index)
+{
+	char fname[MAX_FILENAME], tmp[MAX_INDEX];
+
+	strcat(tmp, "specs_");
+	itoa(index, cindex, 10);
+	strcat(tmp, cindex);
+	strcat(tmp, ".pdbqt");
+}
+
 int gen_conf(char* conf_file, struct conf cf, int index)
 {
 	char tmp[MAX_INDEX];
+	
 	if (cf.lig == NULL || cf.rcp == NULL)
 	{
 		print("Invalide pairs\n");
@@ -87,4 +98,55 @@ int write_conf(char* path, struct conf cf, int index)
 	fwrite(fwstream, sizeof(char), strlen(fwstream), f_hdl); 
 	return 0;
 
+}
+
+int file_trans(const char* file_path, const char* dst_loc, type t)
+{
+	char cmd[MAX_CMD_LEN];
+	if (t == CPU)
+	{
+		strcpy(cmd, "cp ");
+		strcat(cmd, file_path);
+		strcat(cmd, " ");
+		strcat(cmd, dst_loc);
+	} else {
+		strcpy(cmd, "scp ");
+		strcat(cmd, file_path);
+		strcat(cmd, " root@mic0:");
+		strcat(cmd, dst_loc);
+	}
+	return system(cmd);
+}
+
+int setup(const char* lig_lib, const char* rcp_loc, const char* work_path, int index, type t, struct conf cf) 
+{
+	//get all pair files and conf file ready in individual folder
+	char cmd[MAX_CMD_LEN], tmp[MAX_PATH], cindex[MAX_INDEX];
+	if (t == CPU)
+	{
+		strcpy(cmd, "mkdir ");
+		strcat(cmd, work_path);
+		strcat(cmd, "work_");
+		itoa(index, cindex, 10);
+		strcat(cmd, cindex);
+	} else {
+		strcpy(cmd, "ssh mic0 ");
+		strcat(cmd, "\"mkdir ");
+		strcat(cmd, work_path);
+		strcat(cmd, "\"");
+	}
+	if (!system(cmd)) 
+	{
+		print("Work Path Setup Error\n");
+		return -1;
+	}
+
+//file_trans(const char* file_path, const char* dst_loc, type t)
+	strcpy(tmp, lig_lib);
+	
+	if (file_trans(, work_path))
+	{
+		print("File Trans Error\n");
+		return -1;
+	}
 }

@@ -4,15 +4,34 @@
 !_TAG_PROGRAM_NAME	Exuberant Ctags	//
 !_TAG_PROGRAM_URL	http://ctags.sourceforge.net	/official site/
 !_TAG_PROGRAM_VERSION	5.8	//
-CPU	.\task_alloc.h	6;"	d
+CPU	.\file_manage.h	11;"	d
+CPU	.\task_alloc.h	7;"	d
 FILE_MANAGE_H	.\file_manage.h	2;"	d
+LOG_H	.\log.h	2;"	d
+MAX_CMD_LEN	.\file_manage.h	8;"	d
+MAX_CONF_SIZE	.\file_manage.h	7;"	d
+MAX_FILENAME	.\file_manage.h	5;"	d
 MAX_INDEX	.\file_manage.h	4;"	d
-MAX_JOBS	.\task_alloc.h	9;"	d
-MIC	.\task_alloc.h	7;"	d
+MAX_JOBS	.\task_alloc.h	10;"	d
+MAX_PATH	.\file_manage.h	6;"	d
+MIC	.\file_manage.h	12;"	d
+MIC	.\task_alloc.h	8;"	d
 TASK_ALLOC_H	.\task_alloc.h	2;"	d
-abspath_gen	.\file_manage.c	/^void abspath_gen(char* path, char* filename, char* abs_path) $/;"	f
-gen_conf	.\file_manage.c	/^int gen_conf(char* conf_file, char* lig_name, char* rcp_name, char* output, int* ctr, int* sz, int thread_num, int index)$/;"	f
+cent	.\file_manage.h	/^	int cent[3];$/;"	m	struct:conf
+conf	.\file_manage.h	/^struct conf {$/;"	s
+exht	.\file_manage.h	/^	int exht;$/;"	m	struct:conf
+file_trans	.\file_manage.c	/^int file_trans(const char* file_path, const char* dst_loc, type t)$/;"	f
+gen_conf	.\file_manage.c	/^int gen_conf(char* conf_file, struct conf cf, int index)$/;"	f
 get_wkload	.\task_alloc.c	/^int *get_wkload(type t, int rank, char* path, int thread_num) $/;"	f
+job_num	.\task_alloc.h	/^	int job_num;$/;"	m	struct:job_pool
+job_pool	.\task_alloc.h	/^struct job_pool$/;"	s
+lig	.\file_manage.h	/^	char lig[MAX_FILENAME];$/;"	m	struct:conf
+lig_arr	.\task_alloc.h	/^	int lig_arr[MAX_JOBS];$/;"	m	struct:job_pool
 main	.\main.c	/^int main(int argc, char const *argv[])$/;"	f
-print	.\main.c	8;"	d	file:
-write_conf	.\file_manage.c	/^void write_conf(char* path, char* lig_name, char* rcp_name, int thread_num, int index, int is_mic) $/;"	f
+outfile	.\file_manage.h	/^	char outfile[MAX_FILENAME];$/;"	m	struct:conf
+print	.\log.h	4;"	d
+rcp	.\file_manage.h	/^	char rcp[MAX_FILENAME];$/;"	m	struct:conf
+setup	.\file_manage.c	/^int setup(const char* lig_lib, const char* rcp_loc, const char* work_path, int index, type t) $/;"	f
+size	.\file_manage.h	/^	int size[3];$/;"	m	struct:conf
+wk_ptr	.\task_alloc.h	/^	int wk_ptr;$/;"	m	struct:job_pool
+write_conf	.\file_manage.c	/^int write_conf(char* path, struct conf cf, int index) $/;"	f

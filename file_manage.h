@@ -3,9 +3,16 @@
 
 #define MAX_INDEX 5
 #define MAX_FILENAME 20
+#define MAX_PATH 200
 #define MAX_CONF_SIZE 500
+#define MAX_CMD_LEN 200
+
+typedef int type
+#define CPU 0
+#define MIC 1
 
 #include <log.h>
+#include <stdlib.h>
 
 struct conf {
 	char lig[MAX_FILENAME];
