@@ -1,4 +1,4 @@
-#include <job_pool.h>
+#include "job_pool.h"
 
 
 void job_pool_init(struct job_pool *jp, int job_num, int arr[])
@@ -16,7 +16,7 @@ int get_job(struct job_pool *jp, type t)
 {
 	int rst;
 	pthread_mutex_lock(&(jp->get_job_lock));
-	if (jp->cpu_ptr == mic_ptr)
+	if (jp->cpu_ptr == jp->mic_ptr)
 	{
 		return NO_JOB;
 	}
@@ -32,19 +32,25 @@ int get_job(struct job_pool *jp, type t)
 
 void do_job(int job, type t, const char* wk_path)
 {
-	char cmd[MAX_CMD_LEN]; 
+	char cmd[MAX_CMD_LEN];
+	char *conf;
+
+	 
 	if (t == CPU)
 	{
 		strcpy(cmd, "cd ");
 		strcat(cmd, wk_path);
 		strcat(cmd, "; ");
+		strcat(cmd, "./autodock vina --config");
 	} else {
 		strcpy(cmd, "ssh mic0 \"");
 		strcat(cmd, "cd ");
 		strcat(cmd, wk_path);
 		strcat(cmd, "; ");
+		strcat(cmd, "./autodock vina --config");
 
 		strcat(cmd, "\"");
 	}
-	"./autodock vina --config"
+    
+	
 }
