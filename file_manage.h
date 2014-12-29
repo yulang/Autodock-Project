@@ -13,6 +13,7 @@ typedef int type
 
 #include <log.h>
 #include <stdlib.h>
+#include <task_alloc.h>
 
 struct conf {
 	char lig[MAX_FILENAME];
@@ -21,6 +22,7 @@ struct conf {
 	int cent[3];
 	int size[3];
 	int exht;
+	int cpu;
 };
 
 int write_conf(char* path, struct conf cf, int index);
