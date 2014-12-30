@@ -20,11 +20,9 @@ struct conf {
 	char outfile[MAX_FILENAME];
 	int cent[3];
 	int size[3];
-	int core_num;
 	int exht;
 };
 
-//int write_conf(char* path, struct conf cf, int index);
-int setup(const char* lig_lib, const char* rcp_loc, const char* work_path, int index, type t, struct conf cf); 
+int write_conf(char* path, struct conf cf, int index);
 
 #endif

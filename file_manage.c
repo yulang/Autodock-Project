@@ -6,18 +6,16 @@ char* gen_filename(int index)
 {
 	char fname[MAX_FILENAME], tmp[MAX_INDEX];
 
-	strcat(fname, "specs_");
-	itoa(index, tmp, 10);
-	strcat(fname, tmp);
-	strcat(fname, ".pdbqt");
-
-	return fname;
+	strcat(tmp, "specs_");
+	itoa(index, cindex, 10);
+	strcat(tmp, cindex);
+	strcat(tmp, ".pdbqt");
 }
 
 int gen_conf(char* conf_file, struct conf cf, int index)
 {
 	char tmp[MAX_INDEX];
-
+	
 	if (cf.lig == NULL || cf.rcp == NULL)
 	{
 		print("Invalide pairs\n");
@@ -123,7 +121,7 @@ int file_trans(const char* file_path, const char* dst_loc, type t)
 int setup(const char* lig_lib, const char* rcp_loc, const char* work_path, int index, type t, struct conf cf) 
 {
 	//get all pair files and conf file ready in individual folder
-	char cmd[MAX_CMD_LEN], lig[MAX_PATH], cindex[MAX_INDEX];
+	char cmd[MAX_CMD_LEN], tmp[MAX_PATH], cindex[MAX_INDEX];
 	if (t == CPU)
 	{
 		strcpy(cmd, "mkdir ");
@@ -144,26 +142,11 @@ int setup(const char* lig_lib, const char* rcp_loc, const char* work_path, int i
 	}
 
 //file_trans(const char* file_path, const char* dst_loc, type t)
-	strcpy(lig, lig_lib);
-	strcat(lig, gen_filename(index));
+	strcpy(tmp, lig_lib);
 	
-	if (file_trans(lig, work_path, t))
+	if (file_trans(, work_path))
 	{
 		print("File Trans Error\n");
 		return -1;
 	}
-
-	if (file_trans(rcp_loc, work_path, t))
-	{
-		print("File Trans Error\n");
-		return -1;
-	}
-
-//int write_conf(char* path, struct conf cf, int index) 
-	if (write_conf(work_path, cf, index))
-	{
-		print("Setup Error\n");
-		return -1;
-	}
-	return 0;
 }
