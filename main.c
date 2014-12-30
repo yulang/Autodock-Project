@@ -2,7 +2,7 @@
 #include <pthread.h>
 #include <string.h>
 #include <stdlib.h>
-#include <log.h>
+#include "log.h"
 
 #include "mpi.h"
 

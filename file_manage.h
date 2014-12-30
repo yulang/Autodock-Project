@@ -19,6 +19,7 @@ typedef int type;
 #include "log.h"
 #include <stdlib.h>
 #include <stdio.h>
+#include <string.h>
 #include "task_alloc.h"
 
 struct conf {

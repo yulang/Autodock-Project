@@ -32,25 +32,27 @@ int get_job(struct job_pool *jp, type t)
 
 void do_job(int job, type t, const char* wk_path)
 {
+    //won't return until the vina job has been done
 	char cmd[MAX_CMD_LEN];
 	char *conf;
 
-	 
+    gen_filename(conf, job, CONF);
 	if (t == CPU)
 	{
 		strcpy(cmd, "cd ");
 		strcat(cmd, wk_path);
 		strcat(cmd, "; ");
-		strcat(cmd, "./autodock vina --config");
+		strcat(cmd, "./autodock vina --config ");
+        strcat(cmd, conf);
 	} else {
 		strcpy(cmd, "ssh mic0 \"");
 		strcat(cmd, "cd ");
 		strcat(cmd, wk_path);
 		strcat(cmd, "; ");
-		strcat(cmd, "./autodock vina --config");
-
+		strcat(cmd, "./autodock vina --config ");
+        strcat(cmd, conf);
 		strcat(cmd, "\"");
 	}
-    
-	
+    system(cmd);
+    free(conf);
 }
