@@ -1,7 +1,6 @@
-#include <string.h>
-#include <task_alloc.h>
+#include "task_alloc.h"
 
-int *get_wkload(type t, int rank, char* path, int thread_num) 
+void get_wkload(type t, int rank, char* path, int thread_num, int* wk_ld)
 {
 	//return an array of all the index of its workload
 

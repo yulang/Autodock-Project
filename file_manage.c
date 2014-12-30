@@ -1,15 +1,27 @@
-#include <file_manage.h>
+#include "file_manage.h"
 #include <sys/stat.h>
 #include <string.h>
 
-char* gen_filename(int index)
+void gen_filename(char* filename, int index, int file_type)
 {
-	char fname[MAX_FILENAME], tmp[MAX_INDEX];
+	//char fname[MAX_FILENAME], tmp[MAX_INDEX];
+	char tmp[MAX_INDEX];
+	filename = (char *)malloc(MAX_FILENAME);
 
-	strcat(tmp, "specs_");
-	itoa(index, cindex, 10);
-	strcat(tmp, cindex);
-	strcat(tmp, ".pdbqt");
+	if (file_type == LIG)
+	{
+		strcpy(filename, "specs_");
+		itoa(index, tmp, 10);
+		strcat(filename, tmp);
+		strcat(filename, ".pdbqt");
+	} else if (file_type == CONF) {
+		strcpy(filename, "conf_");
+		itoa(index, tmp, 10);
+		strcat(filename, tmp);
+		strcat(filename, ".txt");
+	}
+	
+	return;
 }
 
 int gen_conf(char* conf_file, struct conf cf, int index)
@@ -38,13 +50,13 @@ int gen_conf(char* conf_file, struct conf cf, int index)
 	strcat(conf_file, "\n\ncenter_x = ");
 	if (cf.cent != NULL)
 	{
-		itoa(tmp, cf.cent[0]);
+		itoa(cf.cent[0], tmp, 10);
 		strcat(conf_file, tmp);
 		strcat(conf_file, "cent_y = ");
-		itoa(tmp, cf.cent[1]);
+		itoa(cf.cent[1], tmp, 10);
 		strcat(conf_file, tmp);
 		strcat(conf_file, "cent_z = ");
-		itoa(tmp, cf.cent[2]);
+		itoa(cf.cent[2], tmp, 10);
 		strcat(conf_file, tmp);
 	} else {
 		strcat(conf_file, "11\ncenter_y = 90.5\ncenter_z = 57.5");
@@ -54,13 +66,13 @@ int gen_conf(char* conf_file, struct conf cf, int index)
 
 	if (cf.size != NULL)
 	{
-		itoa(tmp, cf.size[0]);
+		itoa(cf.size[0], tmp, 10);
 		strcat(conf_file, tmp);
 		strcat(conf_file, "cent_y = ");
-		itoa(tmp, cf.size[1]);
+		itoa(cf.size[1], tmp, 10);
 		strcat(conf_file, tmp);
 		strcat(conf_file, "cent_z = ");
-		itoa(tmp, cf.size[2]);
+		itoa(cf.size[2], tmp, 10);
 		strcat(conf_file, tmp);
 	} else {
 		strcat(conf_file, "11\ncenter_y = 90.5\ncenter_z = 57.5");
@@ -68,11 +80,15 @@ int gen_conf(char* conf_file, struct conf cf, int index)
 	itoa(cf.exht, tmp, 10);
 	strcat(conf_file, "\n\nexhaustiveness = ");
 	strcat(conf_file, tmp);
+
+	itoa(cf.cpu, tmp, 10);
+	strcat(conf_file, "\n\ncpu = ");
+	strcat(conf_file, tmp);
 	return 0;
 
 }
 
-int write_conf(char* path, struct conf cf, int index) 
+int write_conf(const char* path, struct conf cf, int index) 
 {
 	FILE* f_hdl;
 	char* fwstream = (char*) malloc(MAX_CONF_SIZE); //conf file write stream
@@ -89,7 +105,7 @@ int write_conf(char* path, struct conf cf, int index)
 		print("Gen Config File Error\n");
 		return -1;
 	} 
-	if (!(f_hdl = fopen(conf_path, "w"))
+	if (!(f_hdl = fopen(conf_path, "w")))
 	{
 		print("Write Config File Error\n");
 		return -1;
@@ -122,6 +138,7 @@ int setup(const char* lig_lib, const char* rcp_loc, const char* work_path, int i
 {
 	//get all pair files and conf file ready in individual folder
 	char cmd[MAX_CMD_LEN], tmp[MAX_PATH], cindex[MAX_INDEX];
+	char *filename;
 	if (t == CPU)
 	{
 		strcpy(cmd, "mkdir ");
@@ -143,10 +160,14 @@ int setup(const char* lig_lib, const char* rcp_loc, const char* work_path, int i
 
 //file_trans(const char* file_path, const char* dst_loc, type t)
 	strcpy(tmp, lig_lib);
+	gen_filename(filename, index, LIG);
+	strcat(tmp, filename);
+	free(filename);
 	
-	if (file_trans(, work_path))
+	if (file_trans(tmp, work_path, t) && file_trans(rcp_loc, work_path, t))
 	{
 		print("File Trans Error\n");
 		return -1;
 	}
+    return 0;
 }

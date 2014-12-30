@@ -7,12 +7,20 @@
 #define MAX_CONF_SIZE 500
 #define MAX_CMD_LEN 200
 
-typedef int type
+#define itoa(in, s, rad) sprintf(s, "%d", in)
+
+typedef int type;
 #define CPU 0
 #define MIC 1
 
-#include <log.h>
+#define CONF 0
+#define LIG 1
+
+#include "log.h"
 #include <stdlib.h>
+#include <stdio.h>
+#include <string.h>
+#include "task_alloc.h"
 
 struct conf {
 	char lig[MAX_FILENAME];
@@ -21,8 +29,11 @@ struct conf {
 	int cent[3];
 	int size[3];
 	int exht;
+	int cpu;
 };
 
-int write_conf(char* path, struct conf cf, int index);
+int write_conf(const char* path, struct conf cf, int index) ;
+int setup(const char* lig_lib, const char* rcp_loc, const char* work_path, int index, type t, struct conf cf);
+void gen_filename(char* filename, int index, int file_type);
 
 #endif
