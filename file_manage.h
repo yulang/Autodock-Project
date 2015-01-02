@@ -20,20 +20,23 @@ typedef int type;
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
-#include "task_alloc.h"
+#include "job_pool.h"
 
 struct conf {
 	char lig[MAX_FILENAME];
 	char rcp[MAX_FILENAME];
 	char outfile[MAX_FILENAME];
-	int cent[3];
-	int size[3];
+	double cent[3];
+	double size[3];
 	int exht;
 	int cpu;
 };
 
+extern char *lig_dic[MAX_JOBS];
 int write_conf(const char* path, struct conf cf, int index) ;
 int setup(const char* lig_lib, const char* rcp_loc, const char* work_path, int index, type t, struct conf cf);
 void gen_filename(char* filename, int index, int file_type);
+void conf_parser(struct conf* cf, const char* in_conf);
+void traverse(const char* lig_lib);
 
 #endif

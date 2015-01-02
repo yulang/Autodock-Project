@@ -5,8 +5,11 @@
 #include "file_manage.h"
 
 #define MAX_JOBS 100
-#define CPU_WL 3
-#define MIC_WL 11
+//#define CPU_WL 3
+//#define MIC_WL 11
+
+#define CPU_CORE 24
+#define MIC_CORE 240
 
 #define NO_JOB 0
 #define GET_JOB_ERROR -1
@@ -21,7 +24,16 @@ struct job_pool
     int job_num;
 };
 
+//int job, type t, const char* wk_path
+struct para {
+    int job;
+    type t;
+    char* wk_path;
+};
+
 int get_job(struct job_pool *jp, type t);
-void do_job(int job, type t, const char* wk_path);
+void* do_job(void* arg);
+void job_pool_init(int rank, int node_num, int total_lig, struct job_pool *jp);
+void job_para_init(int job, type t, const char* wk_path, struct para* p);
 
 #endif

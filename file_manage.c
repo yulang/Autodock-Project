@@ -1,6 +1,10 @@
 #include "file_manage.h"
 #include <sys/stat.h>
-#include <string.h>
+#include <dirent.h>
+
+void conf_init(struct conf* cf);
+
+char *lig_dic[MAX_JOBS];
 
 void gen_filename(char* filename, int index, int file_type)
 {
@@ -10,10 +14,8 @@ void gen_filename(char* filename, int index, int file_type)
 
 	if (file_type == LIG)
 	{
-		strcpy(filename, "specs_");
-		itoa(index, tmp, 10);
-		strcat(filename, tmp);
-		strcat(filename, ".pdbqt");
+        strcpy(filename, lig_dic[index]);
+        
 	} else if (file_type == CONF) {
 		strcpy(filename, "conf_");
 		itoa(index, tmp, 10);
@@ -48,15 +50,18 @@ int gen_conf(char* conf_file, struct conf cf, int index)
 		strcat(conf_file, tmp);
 	}
 	strcat(conf_file, "\n\ncenter_x = ");
-	if (cf.cent != NULL)
+	if (strlen(cf.cent) != 0)
 	{
-		itoa(cf.cent[0], tmp, 10);
+		//itoa(cf.cent[0], tmp, 10);
+        sprintf(tmp, "%lf", cf.cent[0]);
 		strcat(conf_file, tmp);
 		strcat(conf_file, "cent_y = ");
-		itoa(cf.cent[1], tmp, 10);
+		//itoa(cf.cent[1], tmp, 10);
+        sprintf(tmp, "%lf", cf.cent[1]);
 		strcat(conf_file, tmp);
 		strcat(conf_file, "cent_z = ");
-		itoa(cf.cent[2], tmp, 10);
+		//itoa(cf.cent[2], tmp, 10);
+        sprintf(tmp, "%lf", cf.cent[2]);
 		strcat(conf_file, tmp);
 	} else {
 		strcat(conf_file, "11\ncenter_y = 90.5\ncenter_z = 57.5");
@@ -66,13 +71,16 @@ int gen_conf(char* conf_file, struct conf cf, int index)
 
 	if (cf.size != NULL)
 	{
-		itoa(cf.size[0], tmp, 10);
+		//itoa(cf.size[0], tmp, 10);
+        sprintf(tmp, "%lf", cf.size[0]);
 		strcat(conf_file, tmp);
 		strcat(conf_file, "cent_y = ");
-		itoa(cf.size[1], tmp, 10);
+		//itoa(cf.size[1], tmp, 10);
+        sprintf(tmp, "%lf", cf.cent[1]);
 		strcat(conf_file, tmp);
 		strcat(conf_file, "cent_z = ");
-		itoa(cf.size[2], tmp, 10);
+		//itoa(cf.size[2], tmp, 10);
+        sprintf(tmp, "%lf", cf.cent[2]);
 		strcat(conf_file, tmp);
 	} else {
 		strcat(conf_file, "11\ncenter_y = 90.5\ncenter_z = 57.5");
@@ -170,4 +178,77 @@ int setup(const char* lig_lib, const char* rcp_loc, const char* work_path, int i
 		return -1;
 	}
     return 0;
+}
+
+void conf_parser(struct conf* cf, const char* in_conf)
+{
+    FILE* fp;
+    fp = freopen(in_conf, "r", stdin);
+    char s[MAX_CONF_SIZE], *delim = "= \n", *p;
+    
+    conf_init(cf);
+    
+    while (scanf("%s",s)) {
+        p = strtok(s, delim);
+        if (!strcmp(p, "center_x")) {
+            p = strtok(NULL, delim);
+            cf->cent[0] = atof(p);
+        } else if (!strcmp(p, "center_y")) {
+            p = strtok(NULL, delim);
+            cf->cent[1] = atof(p);
+        } else if (!strcmp(p, "center_z")) {
+            p = strtok(NULL, delim);
+            cf->cent[2] = atof(p);
+        } else if (!strcmp(p, "size_x")) {
+            p = strtok(NULL, delim);
+            cf->size[0] = atof(p);
+        } else if (!strcmp(p, "size_y")) {
+            p = strtok(NULL, delim);
+            cf->size[1] = atof(p);
+        } else if (!strcmp(p, "size_z")) {
+            p = strtok(NULL, delim);
+            cf->size[2] = atof(p);
+        } else if (!strcmp(p, "out")) {
+            p = strtok(NULL, delim);
+            strcpy(cf->outfile, p);
+        } else if (!strcmp(p, "exhaustiveness")) {
+            p = strtok(NULL, delim);
+            cf->exht = atoi(p);
+        } else if (!strcmp(p, "cpu")) {
+            p = strtok(NULL, delim);
+            cf->cpu = atoi(p);
+        } else {
+            print("%s\n", "Unknown Para in configure file");
+            exit(1);
+        }
+    }
+    freopen("/dev/console", "r", stdin);
+    fclose(fp);
+}
+
+void traverse(const char* lig_lib)
+{
+    DIR* dir;
+    int i = 0;
+    struct dirent* ptr;
+    if ((dir = opendir(lig_lib)) == NULL) {
+        print("%s\n", "Cannot open ligand library");
+        exit(1);
+    }
+    
+    while ((ptr = readdir(dir)) != NULL) {
+        lig_dic[i] = (char* )malloc(ptr->d_namlen + 1);   //TODO
+        strcpy(lig_dic[i++], ptr->d_name);
+    }
+}
+
+void conf_init(struct conf* cf)
+{
+    strcpy(cf->lig, "");
+    strcpy(cf->rcp, "");
+    strcpy(cf->outfile, "");
+    cf->cent[0] = cf->cent[1] = cf->cent[2] = 0;
+    cf->size[0] = cf->size[1] = cf->size[2] = 30;
+    cf->cpu = 24;
+    cf->exht = 24;
 }
