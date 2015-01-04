@@ -3,6 +3,7 @@
 #include <dirent.h>
 
 void conf_init(struct conf* cf);
+void get_workpath(const char* home_path, int index, char* work_path);
 
 char *lig_dic[MAX_JOBS];
 
@@ -26,42 +27,43 @@ void gen_filename(char* filename, int index, int file_type)
 	return;
 }
 
-int gen_conf(char* conf_file, struct conf cf, int index)
+int gen_conf(char* conf_file, struct conf* cf, int index)
 {
 	char tmp[MAX_INDEX];
 	
-	if (cf.lig == NULL || cf.rcp == NULL)
+	if (cf->rcp == NULL)
 	{
 		print("Invalide pairs\n");
 		return -1;
 	}
 
 	strcpy(conf_file, "receptor = ");
-	strcat(conf_file, cf.rcp);
+	strcat(conf_file, cf->rcp);
 	strcat(conf_file, "\nligand = ");
-	strcat(conf_file, cf.lig);
+	//strcat(conf_file, cf.lig);
+    strcat(conf_file, lig_dic[index]);
 	strcat(conf_file, "\n\nout = ");
-	if (cf.outfile != NULL)
+	if (strlen(cf->outfile) != 0)
 	{
-		strcat(conf_file, cf.outfile);
+		strcat(conf_file, cf->outfile);
 	} else {
 		strcat(conf_file, "output_");
 		itoa(index, tmp, 10);
 		strcat(conf_file, tmp);
 	}
 	strcat(conf_file, "\n\ncenter_x = ");
-	if (strlen(cf.cent) != 0)
+	if (cf->cent != NULL)
 	{
 		//itoa(cf.cent[0], tmp, 10);
-        sprintf(tmp, "%lf", cf.cent[0]);
+        sprintf(tmp, "%lf", cf->cent[0]);
 		strcat(conf_file, tmp);
 		strcat(conf_file, "cent_y = ");
 		//itoa(cf.cent[1], tmp, 10);
-        sprintf(tmp, "%lf", cf.cent[1]);
+        sprintf(tmp, "%lf", cf->cent[1]);
 		strcat(conf_file, tmp);
 		strcat(conf_file, "cent_z = ");
 		//itoa(cf.cent[2], tmp, 10);
-        sprintf(tmp, "%lf", cf.cent[2]);
+        sprintf(tmp, "%lf", cf->cent[2]);
 		strcat(conf_file, tmp);
 	} else {
 		strcat(conf_file, "11\ncenter_y = 90.5\ncenter_z = 57.5");
@@ -69,34 +71,34 @@ int gen_conf(char* conf_file, struct conf cf, int index)
 
 	strcat(conf_file, "\n\n");
 
-	if (cf.size != NULL)
+	if (cf->size != NULL)
 	{
 		//itoa(cf.size[0], tmp, 10);
-        sprintf(tmp, "%lf", cf.size[0]);
+        sprintf(tmp, "%lf", cf->size[0]);
 		strcat(conf_file, tmp);
 		strcat(conf_file, "cent_y = ");
 		//itoa(cf.size[1], tmp, 10);
-        sprintf(tmp, "%lf", cf.cent[1]);
+        sprintf(tmp, "%lf", cf->cent[1]);
 		strcat(conf_file, tmp);
 		strcat(conf_file, "cent_z = ");
 		//itoa(cf.size[2], tmp, 10);
-        sprintf(tmp, "%lf", cf.cent[2]);
+        sprintf(tmp, "%lf", cf->cent[2]);
 		strcat(conf_file, tmp);
 	} else {
 		strcat(conf_file, "11\ncenter_y = 90.5\ncenter_z = 57.5");
 	}
-	itoa(cf.exht, tmp, 10);
+	itoa(cf->exht, tmp, 10);
 	strcat(conf_file, "\n\nexhaustiveness = ");
 	strcat(conf_file, tmp);
 
-	itoa(cf.cpu, tmp, 10);
+	itoa(cf->cpu, tmp, 10);
 	strcat(conf_file, "\n\ncpu = ");
 	strcat(conf_file, tmp);
 	return 0;
 
 }
 
-int write_conf(const char* path, struct conf cf, int index) 
+int write_conf(const char* path, struct conf* cf, int index)
 {
 	FILE* f_hdl;
 	char* fwstream = (char*) malloc(MAX_CONF_SIZE); //conf file write stream
@@ -142,22 +144,24 @@ int file_trans(const char* file_path, const char* dst_loc, type t)
 	return system(cmd);
 }
 
-int setup(const char* lig_lib, const char* rcp_loc, const char* work_path, int index, type t, struct conf cf) 
+int setup(const char* lig_lib, const char* rcp_loc, const char* home_path, int index, type t)
 {
 	//get all pair files and conf file ready in individual folder
-	char cmd[MAX_CMD_LEN], tmp[MAX_PATH], cindex[MAX_INDEX];
+	char cmd[MAX_CMD_LEN], tmp[MAX_PATH], cindex[MAX_INDEX], *work_path;
 	char *filename;
 	if (t == CPU)
 	{
 		strcpy(cmd, "mkdir ");
-		strcat(cmd, work_path);
-		strcat(cmd, "work_");
+		strcat(cmd, home_path);
+		//strcat(cmd, "work_");
 		itoa(index, cindex, 10);
 		strcat(cmd, cindex);
 	} else {
 		strcpy(cmd, "ssh mic0 ");
 		strcat(cmd, "\"mkdir ");
-		strcat(cmd, work_path);
+		strcat(cmd, home_path);
+        itoa(index, cindex, 10);
+        strcat(cmd, cindex);
 		strcat(cmd, "\"");
 	}
 	if (!system(cmd)) 
@@ -172,7 +176,8 @@ int setup(const char* lig_lib, const char* rcp_loc, const char* work_path, int i
 	strcat(tmp, filename);
 	free(filename);
 	
-	if (file_trans(tmp, work_path, t) && file_trans(rcp_loc, work_path, t))
+    get_workpath(home_path, index, work_path);
+	if (file_trans(tmp, work_path, t) && file_trans(rcp_loc, work_path, t)) //BUG!
 	{
 		print("File Trans Error\n");
 		return -1;
@@ -180,7 +185,8 @@ int setup(const char* lig_lib, const char* rcp_loc, const char* work_path, int i
     return 0;
 }
 
-void conf_parser(struct conf* cf, const char* in_conf)
+//have not set ligand
+void conf_parser(struct conf* cf, const char* in_conf, const char* rcp)
 {
     FILE* fp;
     fp = freopen(in_conf, "r", stdin);
@@ -222,6 +228,9 @@ void conf_parser(struct conf* cf, const char* in_conf)
             exit(1);
         }
     }
+    
+    strcpy(cf->rcp, rcp);
+    
     freopen("/dev/console", "r", stdin);
     fclose(fp);
 }
@@ -244,11 +253,20 @@ void traverse(const char* lig_lib)
 
 void conf_init(struct conf* cf)
 {
-    strcpy(cf->lig, "");
+    //strcpy(cf->lig, "");
     strcpy(cf->rcp, "");
     strcpy(cf->outfile, "");
     cf->cent[0] = cf->cent[1] = cf->cent[2] = 0;
     cf->size[0] = cf->size[1] = cf->size[2] = 30;
     cf->cpu = 24;
     cf->exht = 24;
+}
+
+void get_workpath(const char* home_path, int index, char* work_path)
+{
+    char tmp[MAX_INDEX];
+    itoa(index, tmp, 10);
+    //work_path = (char*) malloc(MAX_PATH);
+    strcpy(work_path, home_path);
+    strcat(work_path, tmp);
 }

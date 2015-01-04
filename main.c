@@ -11,8 +11,11 @@
 //#define MPI_ON 0
 #define ARG_NUM 6
 #define MIC_NUM_THREADS 240
+#define HOME_PATH "/tmp/vina/"
 
+int cal_tnum(int core_num, int t_perjob);
 
+int cpu_tnum, mic_tnum;
 
 int main(int argc, char const *argv[])
 {
@@ -23,7 +26,7 @@ int main(int argc, char const *argv[])
 	// MPI_Status status;
 	char *lig_path = argv[1], *rcp_path = argv[3], *conf = argv[4], *out = argv[5];
     int lig_num = atoi(argv[2]);
-    struct job_pool jp;
+    struct job_pool* jp = (struct job_pool*) malloc(sizeof(struct job_pool));
     if (argc == ARG_NUM) {
         if (lig_path == NULL || rcp_path == NULL || conf == NULL || out == NULL) {
             print("%s\n", "Illegal argument!");
@@ -34,22 +37,26 @@ int main(int argc, char const *argv[])
         exit(1);
     }
     
+    int i;
     struct conf* cf = (struct conf*) malloc(sizeof(struct conf));   //conf structure in the program
     
-    conf_parser(cf, conf);
-    job_pool_init(0, 1, lig_num, &jp);
+    conf_parser(cf, conf, rcp_path);
+    job_pool_init(0, 1, lig_num, jp);
     
-    int cpu_tnum = (CPU_CORE%(cf->cpu))? CPU_CORE/cf->cpu + 1 :CPU_CORE/cf->cpu;
-    int mic_tnum = (CPU_CORE%(cf->cpu))? CPU_CORE/cf->cpu + 1 :CPU_CORE/cf->cpu;
+    cpu_tnum = cal_tnum(CPU_CORE, cf->cpu);
+    mic_tnum = cal_tnum(MIC_CORE, cf->cpu);
     
     pthread_t c_tid[cpu_tnum], m_tid[mic_tnum];
-    struct para job_para;
+    struct para* job_para = (struct para*) malloc(sizeof(struct para));
     
-    int i, my_job;
     for(i = 0; i < cpu_tnum; i++) {
         // autodock vina tasks
-        job_para_init(<#int job#>, <#type t#>, <#const char *wk_path#>, <#struct para *p#>)
-        pthread_create(&c_tid[i], NULL, do_job, <#void *restrict#>)
+        job_para_init(jp, CPU, HOME_PATH, lig_path, rcp_path, job_para);
+        pthread_create(&c_tid[i], NULL, vina_worker, (void*)job_para);
+    }
+    
+    for (i = 0; i < mic_tnum; i++) {
+        job_para_init(jp, MIC, HOME_PATH, lig_path, rcp_path, job_para);
     }
     
 	// MPI_Init(&argc, &argv);
@@ -64,4 +71,20 @@ int main(int argc, char const *argv[])
 	// MPI_Finalize();
 
 	return 0;
+}
+
+int cal_tnum(int core_num, int t_perjob)
+{
+    int rst;
+    if ( t_perjob >= core_num) {
+        return 1;
+    } else {
+        if ((core_num%t_perjob) != 0) {
+            rst = core_num/t_perjob + 1;
+        } else {
+            //divide ideally
+            rst = core_num/t_perjob;
+        }
+    }
+    return rst;
 }
