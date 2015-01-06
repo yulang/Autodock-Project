@@ -68,7 +68,7 @@ void do_job(int job, type t, const char* work_path)
 {
     //won't return until the vina job has been done
 	char cmd[MAX_CMD_LEN];
-	char *conf;
+	char conf[MAX_FILENAME];
 
     gen_filename(conf, job, CONF);
 	if (t == CPU)
@@ -91,13 +91,16 @@ void do_job(int job, type t, const char* work_path)
     free(conf);
 }
 
-void job_para_init(struct job_pool* jp, type t, const char* home_path, const char* lig_lib, const char* rcp, struct para* p)
+//void job_para_init(struct job_pool* jp, struct conf* cf, type t, const char* home_path, const char* lig_lib, const char* rcp, const char* vina, struct para* p)
+void job_para_init(struct job_pool* jp, struct conf* cf, type t, const char* home_path, struct para* p)
 {
     p->jp = jp;
+    p->cf = cf;
     p->t = t;
     strcpy(p->home_path, home_path);
-    strcpy(p->lig_lib, lig_lib);
-    strcpy(p->rcp, rcp);
+//    strcpy(p->lig_lib, lig_lib);
+//    strcpy(p->rcp, rcp);
+//    strcpy(p->vina, vina);
 }
 
 void* vina_worker(void* arg)
@@ -109,7 +112,8 @@ void* vina_worker(void* arg)
     my_job = get_job(work_para->jp, work_para->t);
     while (my_job != NO_JOB) {
         get_workpath(work_para->home_path, my_job, work_path);
-        setup(work_para->lig_lib, work_para->rcp, work_para->home_path, my_job, work_para->t);
+        //setup(work_para->cf, work_para->lig_lib, work_para->rcp, work_para->home_path, my_job, work_para->t);
+        setup(work_para->cf, work_para->home_path, my_job, work_para->t);
         do_job(my_job, work_para->t, work_path);
     }
     free(work_para);

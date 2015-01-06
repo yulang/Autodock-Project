@@ -11,7 +11,7 @@ void gen_filename(char* filename, int index, int file_type)
 {
 	//char fname[MAX_FILENAME], tmp[MAX_INDEX];
 	char tmp[MAX_INDEX];
-	filename = (char *)malloc(MAX_FILENAME);
+	//filename = (char *)malloc(MAX_FILENAME);
 
 	if (file_type == LIG)
 	{
@@ -36,9 +36,11 @@ int gen_conf(char* conf_file, struct conf* cf, int index)
 		print("Invalide pairs\n");
 		return -1;
 	}
-
+   
+    
 	strcpy(conf_file, "receptor = ");
-	strcat(conf_file, cf->rcp);
+	//strcat(conf_file, cf->rcp);
+    strcat(conf_file, cf->rcp_name);
 	strcat(conf_file, "\nligand = ");
 	//strcat(conf_file, cf.lig);
     strcat(conf_file, lig_dic[index]);
@@ -46,6 +48,8 @@ int gen_conf(char* conf_file, struct conf* cf, int index)
 	if (strlen(cf->outfile) != 0)
 	{
 		strcat(conf_file, cf->outfile);
+        itoa(index, tmp, 10);
+        strcat(conf_file, tmp);
 	} else {
 		strcat(conf_file, "output_");
 		itoa(index, tmp, 10);
@@ -57,11 +61,11 @@ int gen_conf(char* conf_file, struct conf* cf, int index)
 		//itoa(cf.cent[0], tmp, 10);
         sprintf(tmp, "%lf", cf->cent[0]);
 		strcat(conf_file, tmp);
-		strcat(conf_file, "cent_y = ");
+		strcat(conf_file, "\ncent_y = ");
 		//itoa(cf.cent[1], tmp, 10);
         sprintf(tmp, "%lf", cf->cent[1]);
 		strcat(conf_file, tmp);
-		strcat(conf_file, "cent_z = ");
+		strcat(conf_file, "\ncent_z = ");
 		//itoa(cf.cent[2], tmp, 10);
         sprintf(tmp, "%lf", cf->cent[2]);
 		strcat(conf_file, tmp);
@@ -69,23 +73,23 @@ int gen_conf(char* conf_file, struct conf* cf, int index)
 		strcat(conf_file, "11\ncenter_y = 90.5\ncenter_z = 57.5");
 	}
 
-	strcat(conf_file, "\n\n");
+	strcat(conf_file, "\n\nsize_x = ");
 
 	if (cf->size != NULL)
 	{
 		//itoa(cf.size[0], tmp, 10);
         sprintf(tmp, "%lf", cf->size[0]);
 		strcat(conf_file, tmp);
-		strcat(conf_file, "cent_y = ");
+		strcat(conf_file, "\nsize_y = ");
 		//itoa(cf.size[1], tmp, 10);
         sprintf(tmp, "%lf", cf->cent[1]);
 		strcat(conf_file, tmp);
-		strcat(conf_file, "cent_z = ");
+		strcat(conf_file, "\nsize_z = ");
 		//itoa(cf.size[2], tmp, 10);
         sprintf(tmp, "%lf", cf->cent[2]);
 		strcat(conf_file, tmp);
 	} else {
-		strcat(conf_file, "11\ncenter_y = 90.5\ncenter_z = 57.5");
+		strcat(conf_file, "11\nsize_y = 90.5\nsize_z = 57.5");
 	}
 	itoa(cf->exht, tmp, 10);
 	strcat(conf_file, "\n\nexhaustiveness = ");
@@ -94,6 +98,7 @@ int gen_conf(char* conf_file, struct conf* cf, int index)
 	itoa(cf->cpu, tmp, 10);
 	strcat(conf_file, "\n\ncpu = ");
 	strcat(conf_file, tmp);
+    strcat(conf_file, "\n");
 	return 0;
 
 }
@@ -103,7 +108,7 @@ int write_conf(const char* path, struct conf* cf, int index)
 	FILE* f_hdl;
 	char* fwstream = (char*) malloc(MAX_CONF_SIZE); //conf file write stream
 	int len = strlen(path) + strlen("conf_") + MAX_INDEX + strlen(".txt") + 1;
-	char *conf_path = (char*) malloc(len), *tmp = (char*) malloc(MAX_INDEX + 1);
+	char *conf_path = (char*) malloc(len), tmp[MAX_INDEX+1];
 	itoa(index, tmp, 10);
 	strcpy(conf_path, path);
 	strcat(conf_path, "conf_");
@@ -121,7 +126,8 @@ int write_conf(const char* path, struct conf* cf, int index)
 		return -1;
 	}
 
-	fwrite(fwstream, sizeof(char), strlen(fwstream), f_hdl); 
+	fwrite(fwstream, sizeof(char), strlen(fwstream), f_hdl);
+    fclose(f_hdl);
 	return 0;
 
 }
@@ -144,11 +150,11 @@ int file_trans(const char* file_path, const char* dst_loc, type t)
 	return system(cmd);
 }
 
-int setup(const char* lig_lib, const char* rcp_loc, const char* home_path, int index, type t)
+int setup(struct conf* cf, const char* home_path, int index, type t)
 {
 	//get all pair files and conf file ready in individual folder
-	char cmd[MAX_CMD_LEN], tmp[MAX_PATH], cindex[MAX_INDEX], *work_path;
-	char *filename;
+	char cmd[MAX_CMD_LEN], tmp[MAX_PATH], cindex[MAX_INDEX], work_path[MAX_PATH];
+	char filename[MAX_FILENAME];
 	if (t == CPU)
 	{
 		strcpy(cmd, "mkdir ");
@@ -164,37 +170,70 @@ int setup(const char* lig_lib, const char* rcp_loc, const char* home_path, int i
         strcat(cmd, cindex);
 		strcat(cmd, "\"");
 	}
-	if (!system(cmd)) 
+	if (system(cmd))
 	{
 		print("Work Path Setup Error\n");
 		return -1;
 	}
+    
 
 //file_trans(const char* file_path, const char* dst_loc, type t)
-	strcpy(tmp, lig_lib);
+    
+    /********************SEND LIG & RCP FILE***************************************/
+	strcpy(tmp, cf->lig_lib);
 	gen_filename(filename, index, LIG);
 	strcat(tmp, filename);
-	free(filename);
-	
-    get_workpath(home_path, index, work_path);
-	if (file_trans(tmp, work_path, t) && file_trans(rcp_loc, work_path, t)) //BUG!
+	//free(filename);
+	get_workpath(home_path, index, work_path);
+	//if (file_trans(tmp, work_path, t) && file_trans(rcp_loc, work_path, t)) //BUG!
+    if (file_trans(tmp, work_path, t) || file_trans(cf->rcp, work_path, t))
 	{
 		print("File Trans Error\n");
 		return -1;
 	}
+    
+    /*******************SEND CONF FILE***************************************/
+    write_conf(home_path, cf, index);
+    gen_filename(filename, index, CONF);
+    strcpy(tmp, home_path);
+    strcat(tmp, filename);
+    if (file_trans(tmp, work_path, t)) {
+        print("File Trans Error\n");
+        return -1;
+    }
+    remove(tmp);
+    
+    /*******************SEND VINA*******************************************/
+    if (file_trans(cf->vina, work_path, t)) {
+        print("File Trans Error\n");
+        return -1;
+    }
     return 0;
 }
 
+void cleanup(const char* work_folder, const char* rst_gather, type t)
+{
+    char cmd[MAX_CMD_LEN];
+    if (t == CPU) {
+        strcpy(cmd, "cp ");
+    }
+}
+
 //have not set ligand
-void conf_parser(struct conf* cf, const char* in_conf, const char* rcp)
+//void conf_parser(struct conf* cf, const char* in_conf, const char* rcp)
+void conf_parser(struct conf* cf, const char* in_conf, const char* lig_lib, const char* rcp, const char* vina)
 {
     FILE* fp;
     fp = freopen(in_conf, "r", stdin);
     char s[MAX_CONF_SIZE], *delim = "= \n", *p;
+    char tmp[MAX_CONF_SIZE], *delim2 = "/";
     
     conf_init(cf);
     
-    while (scanf("%s",s)) {
+    while (gets(s)) {
+        if (!strcmp(s, "\r") || !strcmp(s, "\n")) {
+            continue;
+        }
         p = strtok(s, delim);
         if (!strcmp(p, "center_x")) {
             p = strtok(NULL, delim);
@@ -228,9 +267,19 @@ void conf_parser(struct conf* cf, const char* in_conf, const char* rcp)
             exit(1);
         }
     }
-    
+    strcpy(cf->lig_lib, lig_lib);
     strcpy(cf->rcp, rcp);
+    strcpy(cf->vina, vina);
     
+    strcpy(tmp, rcp);
+    char* prev_p = p;
+    p = strtok(tmp, delim2);
+    while (p != NULL) {
+        prev_p = p;
+        p = strtok(NULL, delim2);
+    }
+    strcpy(cf->rcp_name, prev_p);
+    //test("%s", prev_p);
     freopen("/dev/console", "r", stdin);
     fclose(fp);
 }
@@ -246,9 +295,14 @@ void traverse(const char* lig_lib)
     }
     
     while ((ptr = readdir(dir)) != NULL) {
+        if (ptr->d_name[0] == '.') {
+            //skip hidden file
+            continue;
+        }
         lig_dic[i] = (char* )malloc(ptr->d_namlen + 1);   //TODO
         strcpy(lig_dic[i++], ptr->d_name);
     }
+    //printf("1");
 }
 
 void conf_init(struct conf* cf)
