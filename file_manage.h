@@ -1,28 +1,17 @@
 #ifndef FILE_MANAGE_H
 #define FILE_MANAGE_H
 
-
+#include "para.h"
 #include "log.h"
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
 //#include "job_pool.h"
 
-#define MAX_INDEX 10
-#define MAX_FILENAME 50
-#define MAX_PATH 200
-#define MAX_CONF_SIZE 500
-#define MAX_CMD_LEN 200
-#define MAX_JOBS 100
-
-typedef int type;
-#define CPU 0
-#define MIC 1
 
 #define itoa(in, s, rad) sprintf(s, "%d", in)
 
-#define CONF 0
-#define LIG 1
+
 
 struct conf {
 	char lig_lib[MAX_PATH];

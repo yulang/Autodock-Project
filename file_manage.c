@@ -48,6 +48,7 @@ int gen_conf(char* conf_file, struct conf* cf, int index)
 	if (strlen(cf->outfile) != 0)
 	{
 		strcat(conf_file, cf->outfile);
+        strcat(conf_file, "_");
         itoa(index, tmp, 10);
         strcat(conf_file, tmp);
 	} else {
@@ -211,11 +212,48 @@ int setup(struct conf* cf, const char* home_path, int index, type t)
     return 0;
 }
 
-void cleanup(const char* work_folder, const char* rst_gather, type t)
+void cleanup(const char* work_folder, const char* rst_gather, type t, const char* out_name, int job)
 {
-    char cmd[MAX_CMD_LEN];
+    char cmd[MAX_CMD_LEN], cindex[MAX_INDEX];
     if (t == CPU) {
         strcpy(cmd, "cp ");
+        strcat(cmd, work_folder);
+        strcat(cmd, out_name);
+        strcat(cmd, "_");
+        itoa(job, cindex, 10);
+        strcat(cmd, cindex);
+        strcat(cmd, " ");
+        strcat(cmd, rst_gather);
+        if (system(cmd)) {
+            print("Clean up error");
+            exit(1);
+        }
+        remove(work_folder);
+    } else {
+        strcpy(cmd, "scp ");
+        strcat(cmd, MIC_NAME);
+        strcat(cmd, ":");
+        strcat(cmd, work_folder);
+        strcat(cmd, out_name);
+        strcat(cmd, "_");
+        itoa(job, cindex, 10);
+        strcat(cmd, cindex);
+        strcat(cmd, " ");
+        strcat(cmd, rst_gather);
+        if (system(cmd)) {
+            print("Clean up error");
+            exit(1);
+        }
+        
+        strcpy(cmd, "ssh ");
+        strcat(cmd, MIC_NAME);
+        strcat(cmd, " \"rm -r ");
+        strcat(cmd, work_folder);
+        strcat(cmd, "\"");
+        if (system(cmd)) {
+            print("Clean up error");
+            exit(1);
+        }
     }
 }
 

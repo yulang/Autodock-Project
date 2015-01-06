@@ -48,7 +48,7 @@ int main(int argc, char const *argv[])
     job_pool_init(0, 1, lig_num, jp);
     traverse(lig_path);
     env_setup();
-    printf("1");
+
     cpu_tnum = cal_tnum(CPU_CORE, cf->cpu);
     mic_tnum = cal_tnum(MIC_CORE, cf->cpu);
     //test("%s\n",lig_dic[3]);

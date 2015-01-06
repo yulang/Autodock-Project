@@ -3,19 +3,14 @@
 
 #include <pthread.h>
 #include "file_manage.h"
-
+#include "para.h"
 
 //#define CPU_WL 3
 //#define MIC_WL 11
 
 
 
-#define CPU_CORE 24
-#define MIC_CORE 240
-#define CMPT_RATIO 2
 
-#define NO_JOB -1
-#define GET_JOB_ERROR -2
 
 struct job_pool
 {
