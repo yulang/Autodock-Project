@@ -1,20 +1,6 @@
 #include "job_pool.h"
 
-/*
-void get_wkload(int rank, int node_num, int total_lig, int* offset, int* job_num)
-{
-    //rank begins from zero
-    int tmp;
-    tmp = total_lig / node_num;
-    *offset = tmp * rank;
-    if ((rank + 1) * tmp >= total_lig) {
-        *job_num = total_lig - rank * tmp;
-    } else {
-        *job_num = tmp;
-    }
-}*/
 
-//void job_pool_init(struct job_pool *jp, int job_num, int offset)
 void job_pool_init(int rank, int node_num, int total_lig, struct job_pool *jp)
 {
     //rank begins from zero
@@ -32,40 +18,30 @@ void job_pool_init(int rank, int node_num, int total_lig, struct job_pool *jp)
 	jp->job_num = job_num;
 	jp->cpu_ptr = offset;
 	jp->mic_ptr = job_num + offset - 1;
-	//for(i = 0; i < job_num; i++)
-	//	jp->lig_arr[i] = arr[i];
 }
 
 int get_job(struct job_pool *jp, type t)
 {
-    //TODO
-    	printf("### %d require job\n", t);
-	int rst;
-	pthread_mutex_lock(&(jp->get_job_lock));
-	if (jp->cpu_ptr > jp->mic_ptr)
-	{
-		// pthread_mutex_unlock(&(jp->get_job_lock));
-		// return NO_JOB;
-		rst = NO_JOB;
-	} else if (jp->mic_ptr - jp->cpu_ptr < CMPT_RATIO * cpu_tnum) { //the number of jobs left is the minus of two pointer plus 1
-	        if (t == MIC) {
-		    // pthread_mutex_unlock(&(jp->get_job_lock));
-            	    // return NO_JOB;
-		    rst = NO_JOB;
-	        } else {
-        	    rst = (jp->cpu_ptr)++;
-   	        }
-    	} else {
-      		if (t == CPU) {
-        	    rst = (jp->cpu_ptr)++;
-	        } else {
-        	    rst = (jp->mic_ptr)--;
-	        }
-    	}
+    int rst;
+    pthread_mutex_lock(&(jp->get_job_lock));
+    if (jp->cpu_ptr > jp->mic_ptr) {
+        rst = NO_JOB;
+    } else if (jp->mic_ptr - jp->cpu_ptr < CMPT_RATIO * cpu_tnum) { //the number of jobs left is the minus of two pointer plus 1
+        if (t == MIC) {
+            rst = NO_JOB;
+        } else {
+            rst = (jp->cpu_ptr)++;
+        }
+    } else {
+        if (t == CPU) {
+            rst = (jp->cpu_ptr)++;
+        } else {
+            rst = (jp->mic_ptr)--;
+        }
+    }
     pthread_mutex_unlock(&(jp->get_job_lock));
-    	printf("### %d get job %d\n", t, rst);
-    	
-	return rst;
+    
+    return rst;
 }
 
 void do_job(int job, type t, const char* work_path)
@@ -83,24 +59,20 @@ void do_job(int job, type t, const char* work_path)
 		strcat(cmd, work_path);
 		strcat(cmd, " && ");
 		strcat(cmd, "./vina --config ");
-        //strcpy(cmd, work_path);
-        //strcat(cmd, "/vina --config ");
         strcat(cmd, conf);
+        strcat(cmd, "> /dev/null");
 	} else {
-        //TODO
 		strcpy(cmd, "ssh mic0 \"");
 		strcat(cmd, "cd ");
 		strcat(cmd, work_path);
 		strcat(cmd, " && ");
-		strcat(cmd, "./vina_mic --config > /dev/null ");
+		strcat(cmd, "./vina_mic --config ");
         strcat(cmd, conf);
-		strcat(cmd, "\"");
+		strcat(cmd, "> /dev/null \"");
 	}
     system(cmd);
-    //free(conf);
 }
 
-//void job_para_init(struct job_pool* jp, struct conf* cf, type t, const char* home_path, const char* lig_lib, const char* rcp, const char* vina, struct para* p)
 void job_para_init(struct job_pool* jp, struct conf* cf, type t, const char* home_path, struct para** p)
 {
     *p = (struct para*) malloc(sizeof(struct para));
@@ -108,27 +80,19 @@ void job_para_init(struct job_pool* jp, struct conf* cf, type t, const char* hom
     (*p)->cf = cf;
     (*p)->t = t;
     strcpy((*p)->home_path, home_path);
-//    strcpy(p->lig_lib, lig_lib);
-//    strcpy(p->rcp, rcp);
-//    strcpy(p->vina, vina);
+
 }
 
 void* vina_worker(void* arg)
 {
     struct para* work_para = (struct para*)arg;
-    //struct para* work_para = (struct para*) malloc(sizeof(struct para));
-    //memcpy(work_para, (struct para*)arg, sizeof(struct para));
     char work_path[MAX_PATH];
     int my_job;
-    //my_job = get_job(work_para->jp, work_para->t);
     while ((my_job = get_job(work_para->jp, work_para->t)) != NO_JOB) {
         get_workpath(work_para->home_path, my_job, work_path);
-        //setup(work_para->cf, work_para->lig_lib, work_para->rcp, work_para->home_path, my_job, work_para->t);
         setup(work_para->cf, work_para->home_path, my_job, work_para->t);
         do_job(my_job, work_para->t, work_path);
         cleanup(work_path, work_para->cf->gather_loc, work_para->t, work_para->cf->outfile, my_job);
-        // my_job = get_job(work_para->jp, work_para->t);
-//	printf("my job is %d\n", my_job);
     }
     printf("Done!");
     free(work_para);

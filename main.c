@@ -6,7 +6,7 @@
 #include "job_pool.h"
 #include "file_manage.h"
 
-//#include "mpi.h"
+#include "mpi.h"
 
 //#define MPI_ON 0
 #define ARG_NUM 7
@@ -17,6 +17,9 @@ int cal_tnum(int core_num, int t_perjob);
 void env_setup(const char* out_file);
 void env_cleanup();
 
+void MPI_Send(void *buf, int count, MPI_Datatype type, int dest, int tag, MPI_Comm comm);
+void MPI_Recv(void *buf, int count, MPI_Datatype type, int source, int tag, MPI_Comm comm, MPI_Status *status);
+
 int cpu_tnum, mic_tnum;
 
 int main(int argc, char const *argv[])
@@ -24,13 +27,11 @@ int main(int argc, char const *argv[])
     /*
      * Argument: 1.vina 2.vina_mic 3. lig_path 4.rcp_path 5.conf_path 6.out_path
      */
-	int my_rank, p; //p is the total number of MPI process
-	// MPI_Status status;
+	int my_rank, node_num; //p is the total number of MPI process
+    MPI_Status status;
 	const char *vina_exe = argv[1], *vina_mic = argv[2], *lig_path = argv[3], *rcp_path = argv[4], *conf = argv[5], *out = argv[6];
     int lig_num;
     
-    //!!!Job pool is shared by all the threads in one node
-    struct job_pool* jp = (struct job_pool*) malloc(sizeof(struct job_pool));
     if (argc == ARG_NUM) {
         if (lig_path == NULL || rcp_path == NULL || conf == NULL || out == NULL) {
             print("%s\n", "Illegal argument!");
@@ -41,58 +42,84 @@ int main(int argc, char const *argv[])
         exit(1);
     }
     
-    int i;
+    MPI_Init(&argc, &argv);
+    MPI_Comm_rank(MPI_COMM_WORLD, &my_rank);
+    MPI_Comm_size(MPI_COMM_WORLD, &node_num);
+    
+    //MPI_Send(void *buf, int count, MPI_Datatype type, int dest, int tag, MPI_Comm comm)
+    //MPI_Recv(void *buf, int count, MPI_Datatype type, int source, int tag, MPI_Comm comm, MPI_Status *status)
+    
+    
     //!!!Conf is shared by all the threads in one node
     struct conf* cf = (struct conf*) malloc(sizeof(struct conf));   //conf structure in the program
-
-    lig_num = traverse(lig_path);
-    conf_parser(cf, conf, lig_path, rcp_path, vina_exe, vina_mic, out);
-    job_pool_init(0, 1, lig_num, jp);
+    //!!!Job pool is shared by all the threads in one node
+    struct job_pool* jp = (struct job_pool*) malloc(sizeof(struct job_pool));
+    int job_num[node_num];
     
+    if (my_rank == 0) {
+        lig_num = traverse(lig_path);
+    }
+    
+    MPI_Bcast(lig_num, 1, MPI_INT, 0, MPI_COMM_WORLD);
+    
+    
+    conf_parser(cf, conf, lig_path, rcp_path, vina_exe, vina_mic, out);
+    job_pool_init(my_rank, node_num, lig_num, jp);
+    MPI_Barrier(MPI_COMM_WORLD);
+    
+    int i;
+    
+    /******************************** SEND JOB NUM OF EACH NODE****************************/
+    if (my_rank == 0) {
+        job_num[0] = jp->job_num;
+        for (i = 1; i < node_num; i++) {
+            MPI_Recv(job_num + i, 1, MPI_INT, i, 99, MPI_COMM_WORLD);
+        }
+    } else {
+        MPI_Send(jp->job_num, 1, MPI_INT, 0, 99, MPI_COMM_WORLD);
+    }
+    
+    MPI_Barrier(MPI_COMM_WORLD);
+    
+    void *send_ptr;
+    if (my_rank == 0) {
+        send_ptr = lig_dic;
+        send_ptr += job_num[0];
+        for (i = 1; i < node_num; i++) {
+            MPI_Send(send_ptr, <#int count#>, <#int type#>, <#int dest#>, <#int tag#>, <#int comm#>)
+        }
+    }
     env_setup(out);
 
     cpu_tnum = cal_tnum(CPU_CORE, cf->cpu);
     mic_tnum = cal_tnum(MIC_CORE, cf->cpu);
-    //test("%s\n",lig_dic[3]);
-    printf("cpu thread:%d\n",cpu_tnum);
-    //exit(0);
+
+    printf("cpu thread:%d on node %d\n",cpu_tnum, my_rank);
+    printf("mic thread:%d on node %d\n",mic_tnum, my_rank);
 
     pthread_t c_tid[cpu_tnum], m_tid[mic_tnum];
     struct para* job_para;
-    //struct para* job_para = (struct para*) malloc(sizeof(struct para));
     
-   //job_para_init(jp, cf, CPU, HOME_PATH, job_para);
-   // vina_worker((void*)job_para);
+    
     for(i = 0; i < cpu_tnum; i++) {
         // autodock vina tasks
         job_para_init(jp, cf, CPU, HOME_PATH, &job_para);
-	printf("%d\n", job_para->t);
         pthread_create(&c_tid[i], NULL, vina_worker, (void*)job_para);
-	printf("cpu thread %d created\n", c_tid[i]);
     }
     
     for (i = 0; i < mic_tnum; i++) {
-        
         job_para_init(jp, cf, MIC, HOME_PATH, &job_para);
         pthread_create(&m_tid[i], NULL, vina_worker, (void*)job_para);
-	printf("mic thread %d created\n", m_tid[i]);
     }
     
     for (i = 0; i< cpu_tnum; i++)
 	    pthread_join(c_tid[i], NULL);
     for (i = 0; i< mic_tnum; i++)
 	    pthread_join(m_tid[i], NULL);
-    env_cleanup();
-	// MPI_Init(&argc, &argv);
     
+    env_cleanup();
 
-	// MPI_Comm_rank(MPI_COMM_WORLD, &my_rank);
-	// MPI_Comm_size(MPI_COMM_WORLD, &p);
-
-	//MPI_Send(void *buf, int count, MPI_Datatype type, int dest, int tag, MPI_Comm comm)
-	//MPI_Recv(void *buf, int count, MPI_Datatype type, int source, int tag, MPI_Comm comm, MPI_Status *status)
-
-	// MPI_Finalize();
+	MPI_Finalize();
 
 	return 0;
 }
