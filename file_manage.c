@@ -55,6 +55,7 @@ int gen_conf(char* conf_file, struct conf* cf, int index)
 		strcat(conf_file, "output_");
 		itoa(index, tmp, 10);
 		strcat(conf_file, tmp);
+		strcpy(cf->outfile, "output");
 	}
 	strcat(conf_file, "\n\ncenter_x = ");
 	if (cf->cent != NULL)
@@ -62,11 +63,11 @@ int gen_conf(char* conf_file, struct conf* cf, int index)
 		//itoa(cf.cent[0], tmp, 10);
         sprintf(tmp, "%lf", cf->cent[0]);
 		strcat(conf_file, tmp);
-		strcat(conf_file, "\ncent_y = ");
+		strcat(conf_file, "\ncenter_y = ");
 		//itoa(cf.cent[1], tmp, 10);
         sprintf(tmp, "%lf", cf->cent[1]);
 		strcat(conf_file, tmp);
-		strcat(conf_file, "\ncent_z = ");
+		strcat(conf_file, "\ncenter_z = ");
 		//itoa(cf.cent[2], tmp, 10);
         sprintf(tmp, "%lf", cf->cent[2]);
 		strcat(conf_file, tmp);
@@ -205,10 +206,18 @@ int setup(struct conf* cf, const char* home_path, int index, type t)
     remove(tmp);
     
     /*******************SEND VINA*******************************************/
-    if (file_trans(cf->vina, work_path, t)) {
-        print("File Trans Error\n");
-        return -1;
+    if (t == CPU) {
+        if (file_trans(cf->vina, work_path, t)) {
+            print("File Trans Error\n");
+            return -1;
+        }
+    } else {
+        if (file_trans(cf->vina_mic, work_path, t)) {
+            print("File Trans Error\n");
+            return -1;
+        }
     }
+    
     return 0;
 }
 
@@ -218,6 +227,7 @@ void cleanup(const char* work_folder, const char* rst_gather, type t, const char
     if (t == CPU) {
         strcpy(cmd, "cp ");
         strcat(cmd, work_folder);
+	strcat(cmd, "/");
         strcat(cmd, out_name);
         strcat(cmd, "_");
         itoa(job, cindex, 10);
@@ -228,12 +238,19 @@ void cleanup(const char* work_folder, const char* rst_gather, type t, const char
             print("Clean up error");
             exit(1);
         }
-        remove(work_folder);
+        //remove(work_folder);
+	strcpy(cmd, "rm -rf ");
+	strcat(cmd, work_folder);
+	if (system(cmd)) {
+		print("Clean up error");
+		exit(1);
+	}
     } else {
         strcpy(cmd, "scp ");
         strcat(cmd, MIC_NAME);
         strcat(cmd, ":");
         strcat(cmd, work_folder);
+	strcat(cmd, "/");
         strcat(cmd, out_name);
         strcat(cmd, "_");
         itoa(job, cindex, 10);
@@ -247,7 +264,7 @@ void cleanup(const char* work_folder, const char* rst_gather, type t, const char
         
         strcpy(cmd, "ssh ");
         strcat(cmd, MIC_NAME);
-        strcat(cmd, " \"rm -r ");
+        strcat(cmd, " \"rm -rf ");
         strcat(cmd, work_folder);
         strcat(cmd, "\"");
         if (system(cmd)) {
@@ -259,7 +276,7 @@ void cleanup(const char* work_folder, const char* rst_gather, type t, const char
 
 //have not set ligand
 //void conf_parser(struct conf* cf, const char* in_conf, const char* rcp)
-void conf_parser(struct conf* cf, const char* in_conf, const char* lig_lib, const char* rcp, const char* vina)
+void conf_parser(struct conf* cf, const char* in_conf, const char* lig_lib, const char* rcp, const char* vina, const char* vina_mic, const char* gather_loc)
 {
     FILE* fp;
     fp = freopen(in_conf, "r", stdin);
@@ -308,6 +325,8 @@ void conf_parser(struct conf* cf, const char* in_conf, const char* lig_lib, cons
     strcpy(cf->lig_lib, lig_lib);
     strcpy(cf->rcp, rcp);
     strcpy(cf->vina, vina);
+    strcpy(cf->vina_mic, vina_mic);
+    strcpy(cf->gather_loc, gather_loc);
     
     strcpy(tmp, rcp);
     char* prev_p = p;
@@ -322,7 +341,7 @@ void conf_parser(struct conf* cf, const char* in_conf, const char* lig_lib, cons
     fclose(fp);
 }
 
-void traverse(const char* lig_lib)
+int traverse(const char* lig_lib)
 {
     DIR* dir;
     int i = 0;
@@ -337,10 +356,11 @@ void traverse(const char* lig_lib)
             //skip hidden file
             continue;
         }
-        lig_dic[i] = (char* )malloc(ptr->d_namlen + 1);   //TODO
+        lig_dic[i] = (char* )malloc(strlen(ptr->d_name) + 1);   //TODO
         strcpy(lig_dic[i++], ptr->d_name);
     }
     //printf("1");
+    return i;
 }
 
 void conf_init(struct conf* cf)

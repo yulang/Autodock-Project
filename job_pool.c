@@ -39,28 +39,32 @@ void job_pool_init(int rank, int node_num, int total_lig, struct job_pool *jp)
 int get_job(struct job_pool *jp, type t)
 {
     //TODO
+    	printf("### %d require job\n", t);
 	int rst;
 	pthread_mutex_lock(&(jp->get_job_lock));
 	if (jp->cpu_ptr > jp->mic_ptr)
 	{
-		return NO_JOB;
-	}
-    
-    if (jp->mic_ptr - jp->cpu_ptr < CMPT_RATIO * cpu_tnum) { //the number of jobs left is the minus of two pointer plus 1
-        if (t == MIC) {
-            return NO_JOB;
-        } else {
-            rst = (jp->cpu_ptr)++;
-        }
-    } else {
-        if (t == CPU)
-        {
-            rst = (jp->cpu_ptr)++;
-        } else {
-            rst = (jp->mic_ptr)--;
-        }
-    }
+		// pthread_mutex_unlock(&(jp->get_job_lock));
+		// return NO_JOB;
+		rst = NO_JOB;
+	} else if (jp->mic_ptr - jp->cpu_ptr < CMPT_RATIO * cpu_tnum) { //the number of jobs left is the minus of two pointer plus 1
+	        if (t == MIC) {
+		    // pthread_mutex_unlock(&(jp->get_job_lock));
+            	    // return NO_JOB;
+		    rst = NO_JOB;
+	        } else {
+        	    rst = (jp->cpu_ptr)++;
+   	        }
+    	} else {
+      		if (t == CPU) {
+        	    rst = (jp->cpu_ptr)++;
+	        } else {
+        	    rst = (jp->mic_ptr)--;
+	        }
+    	}
     pthread_mutex_unlock(&(jp->get_job_lock));
+    	printf("### %d get job %d\n", t, rst);
+    	
 	return rst;
 }
 
@@ -70,34 +74,40 @@ void do_job(int job, type t, const char* work_path)
 	char cmd[MAX_CMD_LEN];
 	char conf[MAX_FILENAME];
 
+	printf("%d do job \n", t);
+
     gen_filename(conf, job, CONF);
 	if (t == CPU)
 	{
 		strcpy(cmd, "cd ");
 		strcat(cmd, work_path);
-		strcat(cmd, "; ");
-		strcat(cmd, "./autodock vina --config ");
+		strcat(cmd, " && ");
+		strcat(cmd, "./vina --config ");
+        //strcpy(cmd, work_path);
+        //strcat(cmd, "/vina --config ");
         strcat(cmd, conf);
 	} else {
+        //TODO
 		strcpy(cmd, "ssh mic0 \"");
 		strcat(cmd, "cd ");
 		strcat(cmd, work_path);
-		strcat(cmd, "; ");
-		strcat(cmd, "./autodock vina --config ");
+		strcat(cmd, " && ");
+		strcat(cmd, "./vina_mic --config > /dev/null ");
         strcat(cmd, conf);
 		strcat(cmd, "\"");
 	}
     system(cmd);
-    free(conf);
+    //free(conf);
 }
 
 //void job_para_init(struct job_pool* jp, struct conf* cf, type t, const char* home_path, const char* lig_lib, const char* rcp, const char* vina, struct para* p)
-void job_para_init(struct job_pool* jp, struct conf* cf, type t, const char* home_path, struct para* p)
+void job_para_init(struct job_pool* jp, struct conf* cf, type t, const char* home_path, struct para** p)
 {
-    p->jp = jp;
-    p->cf = cf;
-    p->t = t;
-    strcpy(p->home_path, home_path);
+    *p = (struct para*) malloc(sizeof(struct para));
+    (*p)->jp = jp;
+    (*p)->cf = cf;
+    (*p)->t = t;
+    strcpy((*p)->home_path, home_path);
 //    strcpy(p->lig_lib, lig_lib);
 //    strcpy(p->rcp, rcp);
 //    strcpy(p->vina, vina);
@@ -105,17 +115,22 @@ void job_para_init(struct job_pool* jp, struct conf* cf, type t, const char* hom
 
 void* vina_worker(void* arg)
 {
-    struct para* work_para = (struct para*) malloc(sizeof(struct para));
-    memcpy(work_para, (struct para*)arg, sizeof(struct para));
+    struct para* work_para = (struct para*)arg;
+    //struct para* work_para = (struct para*) malloc(sizeof(struct para));
+    //memcpy(work_para, (struct para*)arg, sizeof(struct para));
     char work_path[MAX_PATH];
     int my_job;
-    my_job = get_job(work_para->jp, work_para->t);
-    while (my_job != NO_JOB) {
+    //my_job = get_job(work_para->jp, work_para->t);
+    while ((my_job = get_job(work_para->jp, work_para->t)) != NO_JOB) {
         get_workpath(work_para->home_path, my_job, work_path);
         //setup(work_para->cf, work_para->lig_lib, work_para->rcp, work_para->home_path, my_job, work_para->t);
         setup(work_para->cf, work_para->home_path, my_job, work_para->t);
         do_job(my_job, work_para->t, work_path);
+        cleanup(work_path, work_para->cf->gather_loc, work_para->t, work_para->cf->outfile, my_job);
+        // my_job = get_job(work_para->jp, work_para->t);
+//	printf("my job is %d\n", my_job);
     }
+    printf("Done!");
     free(work_para);
     return NULL;
 }

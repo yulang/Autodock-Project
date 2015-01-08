@@ -36,7 +36,7 @@ int get_job(struct job_pool *jp, type t);
 void do_job(int job, type t, const char* work_path);
 void job_pool_init(int rank, int node_num, int total_lig, struct job_pool *jp);
 //void job_para_init(struct job_pool* jp, struct conf* cf, type t, const char* home_path, const char* lig_lib, const char* rcp, const char* vina, struct para* p);
-void job_para_init(struct job_pool* jp, struct conf* cf, type t, const char* home_path, struct para* p);
+void job_para_init(struct job_pool* jp, struct conf* cf, type t, const char* home_path, struct para** p);
 void* vina_worker(void* arg);
 extern int cpu_tnum, mic_tnum;
 
