@@ -34,7 +34,8 @@ int setup(struct conf* cf, const char* home_path, int index, type t);
 void gen_filename(char* filename, int index, int file_type);
 //void conf_parser(struct conf* cf, const char* in_conf, const char* rcp);
 void conf_parser(struct conf* cf, const char* in_conf, const char* lig_lib, const char* rcp, const char* vina, const char* vina_mic, const char* gather_loc);
-int traverse(const char* lig_lib);
+int traverse(const char* lig_lib, int* max_len);
+//int traverse(const char* lig_lib);
 void get_workpath(const char* home_path, int index, char* work_path);
 void cleanup(const char* work_folder, const char* rst_gather, type t, const char* out_name, int job);
 

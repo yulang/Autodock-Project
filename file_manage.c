@@ -322,23 +322,27 @@ void conf_parser(struct conf* cf, const char* in_conf, const char* lig_lib, cons
     fclose(fp);
 }
 
-int traverse(const char* lig_lib)
+int traverse(const char* lig_lib, int* max_len)
 {
     DIR* dir;
-    int i = 0;
+    int i = 0, cur_len;
     struct dirent* ptr;
     if ((dir = opendir(lig_lib)) == NULL) {
         print("%s\n", "Cannot open ligand library");
         exit(1);
     }
     
+    *max_len = -1;
     while ((ptr = readdir(dir)) != NULL) {
         if (ptr->d_name[0] == '.') {
             //skip hidden file
             continue;
         }
-        lig_dic[i] = (char* )malloc(strlen(ptr->d_name) + 1);   //TODO
+        cur_len = strlen(ptr->d_name) + 1;
+        //lig_dic[i] = (char* )malloc(strlen(ptr->d_name) + 1);   //TODO
+        lig_dic[i] = (char* )malloc(cur_len);
         strcpy(lig_dic[i++], ptr->d_name);
+        *max_len = *max_len >= cur_len ? *max_len : cur_len;
     }
     //printf("1");
     return i;

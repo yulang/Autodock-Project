@@ -54,14 +54,14 @@ int main(int argc, char const *argv[])
     struct conf* cf = (struct conf*) malloc(sizeof(struct conf));   //conf structure in the program
     //!!!Job pool is shared by all the threads in one node
     struct job_pool* jp = (struct job_pool*) malloc(sizeof(struct job_pool));
-    int job_num[node_num];
+    int job_num[node_num], max_len;
     
     if (my_rank == 0) {
-        lig_num = traverse(lig_path);
+        lig_num = traverse(lig_path, &max_len);
     }
     
     MPI_Bcast(lig_num, 1, MPI_INT, 0, MPI_COMM_WORLD);
-    
+    MPI_Bcast(max_len, 1, MPI_INT, 0, MPI_COMM_WORLD);
     
     conf_parser(cf, conf, lig_path, rcp_path, vina_exe, vina_mic, out);
     job_pool_init(my_rank, node_num, lig_num, jp);
@@ -81,14 +81,26 @@ int main(int argc, char const *argv[])
     
     MPI_Barrier(MPI_COMM_WORLD);
     
-    void *send_ptr;
+    /******************************* SEND JOB / LIGAND NAME TO EACH NODE *******************/
     if (my_rank == 0) {
+        int j;
+        void *send_ptr;
         send_ptr = lig_dic;
         send_ptr += job_num[0];
         for (i = 1; i < node_num; i++) {
-            MPI_Send(send_ptr, <#int count#>, <#int type#>, <#int dest#>, <#int tag#>, <#int comm#>)
+            for (j = 0; j < job_num[i]; j++) {
+                MPI_Send(*send_ptr, strlen(*send_ptr) + 1, MPI_CHAR, i, 98, MPI_COMM_WORLD);
+                send_ptr++;
+            }
+        }
+    } else {
+        void *rcv_ptr = lig_dic + jp->cpu_ptr;
+        for (i = 0; i < jp->job_num; i++) {
+            MPI_Recv(*rcv_ptr, max_len, MPI_CHAR, 0, 98, MPI_COMM_WORLD, &status);  //BUG!!
+            rcv_ptr++;
         }
     }
+    
     env_setup(out);
 
     cpu_tnum = cal_tnum(CPU_CORE, cf->cpu);
